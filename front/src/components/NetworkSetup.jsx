@@ -98,7 +98,7 @@ function NetworkSetup() {
         />
         <TextEntry
           name="subnet"
-          label="Subnet (Docker): "
+          label="Subnet: "
           help="Subnet"
           register={register}
         />
