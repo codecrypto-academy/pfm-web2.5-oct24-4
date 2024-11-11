@@ -6,7 +6,19 @@ app.use(cors());
 
 
 app.get('/', (req, res) => {
-    res.send('Hello World!');
+    res.send('Hello Home!');
+});
+
+app.get('/nodos', (req, res) => {
+    res.send('Hello Nodos!');
+});
+
+app.get('/faucet', (req, res) => {
+    res.send('Hello Faucet!');
+});
+
+app.get('/nuevared', (req, res) => {
+    res.send('Hello NuevaRed!');
 });
 
 app.listen(3000, () => {
