@@ -92,7 +92,9 @@ export default function Home() {
         </table>
 
         <div className="button-container">
-          <button className="btn btn-primary">CREAR RED</button>
+          <Link to="/network-setup">
+            <button className="btn btn-primary">CREAR RED</button>
+          </Link> 
       </div>
 
       </div>
