@@ -1,30 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import axios from "axios";
 
 const CreateNetworkForm: React.FC = () => {
-  const [networkName, setNetworkName] = useState('');
+  const [networkName, setNetworkName] = useState("");
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(`Creating network: ${networkName}`);
+
+    // Validación básica
+    if (!networkName) {
+      setError("El nombre de la red es obligatorio.");
+      return;
+    }
+
+    try {
+      // Hacemos la solicitud al backend
+      const response = await axios.post("http://localhost:5555/create-network", {
+        networkName,
+      });
+
+      setMessage(response.data.message);
+      setError(""); // Limpiar errores
+    } catch (err) {
+      setError("Error al crear la red. Inténtalo nuevamente.");
+      setMessage(""); // Limpiar mensaje de éxito
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-md mx-auto p-6 border rounded-lg shadow-lg bg-white">
-      <h2 className="text-2xl font-semibold mb-4">Create Private Network</h2>
-      <label htmlFor="networkName" className="block text-sm font-medium text-gray-700">Network Name</label>
-      <input
-        type="text"
-        id="networkName"
-        value={networkName}
-        onChange={(e) => setNetworkName(e.target.value)}
-        className="w-full p-3 mt-2 mb-4 border border-gray-300 rounded-lg"
-        placeholder="Enter network name"
-        required
-      />
-      <button type="submit" className="w-full p-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-        Create Network
-      </button>
-    </form>
+    <div className="max-w-md mx-auto p-4 border rounded-lg shadow-md">
+      <h2 className="text-xl font-bold mb-4">Crear Red</h2>
+      
+      {error && <div className="text-red-600 mb-2">{error}</div>}
+      {message && <div className="text-green-600 mb-2">{message}</div>}
+      
+      <form onSubmit={handleSubmit}>
+        <div className="mb-4">
+          <label htmlFor="networkName" className="block text-sm font-medium">
+            Nombre de la Red
+          </label>
+          <input
+            id="networkName"
+            type="text"
+            value={networkName}
+            onChange={(e) => setNetworkName(e.target.value)}
+            className="w-full p-2 mt-2 border rounded-md"
+            placeholder="Ingrese el nombre de la red"
+          />
+        </div>
+        
+        <button
+          type="submit"
+          className="w-full p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+        >
+          Crear Red
+        </button>
+      </form>
+    </div>
   );
 };
 
