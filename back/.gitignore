@@ -1,0 +1,32 @@
+# Node modules
+node_modules/
+
+# Archivos de logs
+*.log
+
+# Archivos generados por Docker
+docker-compose.override.yml
+.docker/
+docker/
+
+# Archivos de configuración local
+.env
+.env.local
+.env.*.local
+
+# Directorios específicos de sistemas operativos
+.DS_Store
+Thumbs.db
+
+# Archivos de dependencias globales
+yarn-error.log
+
+# Directorios de build
+build/
+dist/
+
+# Archivos de configuración de IDEs (Visual Studio Code, etc)
+.vscode/
+
+# Archivos de test
+coverage/
