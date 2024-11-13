@@ -3,10 +3,19 @@ import cors from "cors";
 const Docker = require("dockerode");
 const app = express();
 const docker = new Docker();
+const path = require("path");
 
 // Middlewares
 app.use(express.json());
 app.use(cors());
+
+interface Network {
+  id: string;
+  name: string;
+}
+
+// Almacenamiento temporal de redes
+let networks: Network[] = []; // Puedes usar un arreglo para almacenar los nombres de las redes
 
 // Ruta para crear una red
 app.post(
@@ -19,28 +28,45 @@ app.post(
     }
 
     try {
+      const genesisPath = path.resolve(
+        __dirname,
+        "network-config",
+        "genesis.json"
+      );
       // Aquí creamos un contenedor con Geth usando Docker
       const container = await docker.createContainer({
-        Image: "ethereum/client-go:latest",
+        Image: "ethereum/client-go:v1.11.5",
         name: `geth-${networkName}`,
+        Entrypoint: ["/bin/sh", "-c", "geth"], // Usamos /bin/sh para invocar geth desde el contenedor
         Cmd: [
-          "geth",
+          "--http", // Habilitar RPC HTTP
+          "--http.api",
+          "eth,web3,personal,net", // APIs disponibles
           "--networkid",
-          "1234", // Usamos un ID de red arbitrario (esto podría ser más dinámico)
+          "1234", // ID de red
           "--datadir",
-          `/data/${networkName}`,
-          "--rpc",
-          "--rpcapi",
-          "eth,net,web3,personal",
-          "--mine",
+          `/data/${networkName}`, // Directorio de datos
+          "--mine", // Iniciar minería
+          "--port",
+          "30304", // Configurar el puerto P2P
         ],
         HostConfig: {
-          Binds: [`/path/to/genesis.json:/genesis.json`], // Ruta al archivo genesis.json
+          Binds: [`${genesisPath}:/genesis.json`], // Montar genesis.json en el contenedor
+          PortBindings: {
+            "30304/tcp": [
+              {
+                HostPort: "30304", // Asociar el puerto 30304
+              },
+            ],
+          },
         },
       });
 
       // Iniciamos el contenedor
       await container.start();
+
+      //Añadir la red al arreglo de redes
+      networks.push(networkName);
 
       // Enviar respuesta exitosa
       return res
@@ -52,6 +78,17 @@ app.post(
     }
   }
 );
+
+// Ruta para obtener las redes
+app.get("/networks", (req, res) => {
+  try {
+    // Código para obtener la lista de redes creadas
+    res.json(networks);
+  } catch (error) {
+    console.error("Error al obtener las redes:", error);
+    res.status(500).json({ error: "Error al obtener las redes" });
+  }
+});
 
 // Servidor
 app.listen(5555, () => {

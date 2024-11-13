@@ -13,11 +13,12 @@
   },
   "scripts": {
     "build": "tsc",
-    "start": "node dist/app.js",
+    "start": "nodemon dist/app.js",
     "dev": "ts-node src/app.ts"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
+    "nodemon": "^3.1.7",
     "ts-node": "^10.9.2"
   }
 }

@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import axios from "axios";
 
-const CreateNetworkForm: React.FC = () => {
+interface CreateNetworkFormProps {
+  onNetworkCreated: () => void;
+}
+
+const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated }) => {
   const [networkName, setNetworkName] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -23,6 +27,8 @@ const CreateNetworkForm: React.FC = () => {
 
       setMessage(response.data.message);
       setError(""); // Limpiar errores
+      setNetworkName(""); // Limpiar el campo del formulario
+      onNetworkCreated(); // Llamada a la actualización del listado
     } catch (err) {
       setError("Error al crear la red. Inténtalo nuevamente.");
       setMessage(""); // Limpiar mensaje de éxito
