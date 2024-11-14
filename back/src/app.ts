@@ -10,8 +10,10 @@ app.use(express.json());
 app.use(cors());
 
 interface Network {
-  id: string;
-  name: string;
+  networkName: string;
+  chainId: string;
+  subnet: string;
+  ipBootNode: string;
 }
 
 // Almacenamiento temporal de redes
@@ -21,10 +23,13 @@ let networks: Network[] = []; // Puedes usar un arreglo para almacenar los nombr
 app.post(
   "/create-network",
   async (req: Request, res: Response): Promise<Response> => {
-    const { networkName } = req.body;
+    const { networkName, chainId, subnet, ipBootNode } = req.body;
 
-    if (!networkName) {
-      return res.status(400).json({ error: "Falta el nombre de la red" });
+    // Verificar que todos los campos requeridos estén presentes
+    if (!networkName || !chainId || !subnet || !ipBootNode) {
+      return res
+        .status(400)
+        .json({ error: "Todos los campos son obligatorios" });
     }
 
     try {
@@ -33,6 +38,7 @@ app.post(
         "network-config",
         "genesis.json"
       );
+
       // Aquí creamos un contenedor con Geth usando Docker
       const container = await docker.createContainer({
         Image: "ethereum/client-go:v1.11.5",
@@ -43,12 +49,14 @@ app.post(
           "--http.api",
           "eth,web3,personal,net", // APIs disponibles
           "--networkid",
-          "1234", // ID de red
+          chainId, // Usamos el chainId proporcionado
           "--datadir",
           `/data/${networkName}`, // Directorio de datos
           "--mine", // Iniciar minería
           "--port",
           "30304", // Configurar el puerto P2P
+          "--bootnodes",
+          ipBootNode, // Usamos la IP del nodo de arranque proporcionado
         ],
         HostConfig: {
           Binds: [`${genesisPath}:/genesis.json`], // Montar genesis.json en el contenedor
@@ -65,13 +73,24 @@ app.post(
       // Iniciamos el contenedor
       await container.start();
 
-      //Añadir la red al arreglo de redes
-      networks.push(networkName);
+      // Añadir la red al arreglo de redes
+      networks.push({
+        networkName: networkName,
+        chainId: chainId,
+        subnet: subnet,
+        ipBootNode: ipBootNode,
+      });
 
       // Enviar respuesta exitosa
       return res
         .status(201)
-        .json({ message: "Red creada exitosamente", networkName });
+        .json({
+          message: "Red creada exitosamente",
+          networkName,
+          chainId,
+          subnet,
+          ipBootNode,
+        });
     } catch (error) {
       console.error("Error al crear la red:", error);
       return res.status(500).json({ error: "Error al crear la red" });
