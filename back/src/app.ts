@@ -82,15 +82,13 @@ app.post(
       });
 
       // Enviar respuesta exitosa
-      return res
-        .status(201)
-        .json({
-          message: "Red creada exitosamente",
-          networkName,
-          chainId,
-          subnet,
-          ipBootNode,
-        });
+      return res.status(201).json({
+        message: "Red creada exitosamente",
+        networkName,
+        chainId,
+        subnet,
+        ipBootNode,
+      });
     } catch (error) {
       console.error("Error al crear la red:", error);
       return res.status(500).json({ error: "Error al crear la red" });
@@ -108,6 +106,96 @@ app.get("/networks", (req, res) => {
     res.status(500).json({ error: "Error al obtener las redes" });
   }
 });
+
+app.get(
+  "/network-details/:networkName",
+  async (req: Request, res: Response): Promise<Response> => {
+    const { networkName } = req.params;
+
+    // Buscar la red en la lista de redes (o base de datos)
+    const network = networks.find((net) => net.networkName === networkName);
+
+    if (!network) {
+      return res.status(404).json({ error: "Red no encontrada" });
+    }
+
+    /*try {
+      // Simulación de detalles de la red (puedes adaptarlo a tu caso real)
+      const networkDetails = {
+        networkName: network.networkName,
+        chainId: network.chainId,
+        subnet: network.subnet,
+        ipBootNode: network.ipBootNode,
+        nodes: [
+          {
+            id: "node1",
+            ip: "192.168.1.2",
+            role: "miner",
+          },
+          {
+            id: "node2",
+            ip: "192.168.1.3",
+            role: "validator",
+          },
+        ],
+      };
+
+      return res.status(200).json(networkDetails);
+    } catch (error) {
+      console.error("Error al obtener los detalles de la red:", error);
+      return res
+        .status(500)
+        .json({ error: "Error al obtener los detalles de la red" });
+    }*/
+
+    // Devolver los detalles de la red
+    return res.status(200).json(network);
+  }
+);
+
+app.delete(
+  "/delete-network/:networkName",
+  async (req: Request, res: Response): Promise<Response> => {
+    const { networkName } = req.params;
+
+    // Buscamos si la red existe
+    const networkIndex = networks.findIndex(
+      (network) => network.networkName === networkName
+    );
+
+    if (networkIndex === -1) {
+      return res.status(404).json({ error: "Red no encontrada" });
+    }
+
+    try {
+      // Aquí eliminamos la red de la lista
+      networks.splice(networkIndex, 1);
+
+      // También debemos detener y eliminar el contenedor de Docker asociado (si lo hay)
+      const containerName = `geth-${networkName}`;
+      const container = await docker.getContainer(containerName);
+
+      try {
+        await container.stop(); // Detenemos el contenedor si está en ejecución
+        await container.remove(); // Eliminamos el contenedor
+      } catch (dockerError) {
+        console.error(
+          `Error al detener o eliminar el contenedor: ${
+            (dockerError as Error).message
+          }`
+        );
+      }
+
+      // Enviar respuesta exitosa
+      return res
+        .status(200)
+        .json({ message: "Red eliminada exitosamente", networkName });
+    } catch (error) {
+      console.error("Error al eliminar la red:", error);
+      return res.status(500).json({ error: "Error al eliminar la red" });
+    }
+  }
+);
 
 // Servidor
 app.listen(5555, () => {

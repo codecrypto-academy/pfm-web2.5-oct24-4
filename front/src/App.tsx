@@ -4,8 +4,15 @@ import Footer from './components/Footer';
 import CreateNetworkForm from './components/CreateNetworkForm';
 import NetworkList from "./components/NetworkList";
 
+interface Network {
+  networkName: string;
+  chainId: string;
+  subnet: string;
+  ipBootNode: string;
+}
+
 const App: React.FC = () => {
-  const [networks, setNetworks] = useState<string[]>([]);
+  const [networks, setNetworks] = useState<Network[]>([]);
   
   const fetchNetworks = async () => {
     try {
@@ -35,7 +42,7 @@ const App: React.FC = () => {
 
           <div className="mt-8">
         <h2 className="text-2xl font-semibold mb-4">Listado de Redes Privadas</h2>
-        <NetworkList networks={networks} /> {/* Pasar el listado de redes como prop */}
+        <NetworkList networks={networks} refreshNetworks={fetchNetworks} /> {/* Pasar fetchNetworks como refreshNetworks */}
 
       </div>
         </div>
