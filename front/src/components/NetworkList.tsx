@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 interface Network {
   networkName: string;
@@ -13,9 +13,38 @@ interface NetworkListProps {
 }
 
 const NetworkList: React.FC<NetworkListProps> = ({ networks, refreshNetworks }) => {
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  const handleDeleteNetwork = async (networkName: string) => {
+    try {
+      const response = await fetch(`http://localhost:5555/delete-network/${networkName}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setStatusMessage(`La red "${networkName}" ha sido eliminada.`);
+        refreshNetworks?.(); // Refrescar la lista de redes después de la eliminación
+
+        // Eliminar el mensaje después de 3 segundos
+        setTimeout(() => setStatusMessage(null), 3000);
+      } else {
+        console.error("Error al eliminar la red:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error en la solicitud de eliminación:", error);
+    }
+  };
+
   return (
     <div className="max-w-md mx-auto p-4 border rounded-lg shadow-md">
       <h2 className="text-xl font-bold mb-4">Redes Privadas</h2>
+
+      {/* Mensaje de estado */}
+      {statusMessage && (
+        <div className="mb-4 p-2 text-green-600 bg-green-100 rounded">
+          {statusMessage}
+        </div>
+      )}
 
       {networks.length === 0 ? (
         <p>No hay redes creadas aún.</p>
@@ -31,11 +60,7 @@ const NetworkList: React.FC<NetworkListProps> = ({ networks, refreshNetworks }) 
 
                 {/* Botón de eliminar */}
                 <button
-                  onClick={() => {
-                    // Aquí agregas la lógica para eliminar la red (puede llamar a la API correspondiente)
-                    console.log(`Eliminar red: ${network.networkName}`);
-                    refreshNetworks?.(); // Actualiza la lista después de eliminar
-                  }}
+                  onClick={() => handleDeleteNetwork(network.networkName)}
                   className="ml-4 text-sm text-red-500 hover:underline"
                 >
                   Eliminar
@@ -50,5 +75,3 @@ const NetworkList: React.FC<NetworkListProps> = ({ networks, refreshNetworks }) 
 };
 
 export default NetworkList;
-
-
