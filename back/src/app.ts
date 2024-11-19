@@ -1,5 +1,7 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
+import ethers from "ethers";
+import bodyParser from "body-parser";
 const Docker = require("dockerode");
 const app = express();
 const docker = new Docker();
@@ -8,12 +10,20 @@ const path = require("path");
 // Middlewares
 app.use(express.json());
 app.use(cors());
+app.use(bodyParser.json());
 
+// Estructura de datos para almacenar la red y nodos
 interface Network {
   networkName: string;
   chainId: string;
   subnet: string;
   ipBootNode: string;
+  nodes: Node[];
+}
+
+interface Node {
+  nodeId: string;
+  provider: ethers.JsonRpcProvider; // Proveedor de nodos
 }
 
 // Almacenamiento temporal de redes
@@ -48,7 +58,7 @@ app.post(
           "--http", // Habilitar RPC HTTP
           "--http.api",
           "eth,web3,personal,net", // APIs disponibles
-          "--networkid",
+          "--networkName",
           chainId, // Usamos el chainId proporcionado
           "--datadir",
           `/data/${networkName}`, // Directorio de datos
@@ -196,6 +206,100 @@ app.delete(
     }
   }
 );
+
+// Función para añadir un nodo a una red Ethereum existente
+app.post('/add-node', async (req: Request, res: Response) => {
+    const { networkName, nodeId, rpcUrl } = req.body;
+
+    if (!networkName || !nodeId || !rpcUrl) {
+        return res.status(400).json({ error: 'networkName, nodeId y rpcUrl son requeridos' });
+    }
+
+    try {
+        // Crear un proveedor usando el rpcUrl del nodo
+        const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+
+        // Verificar la conexión y obtener la información de la red
+        const network = await provider.getNetwork();
+
+        if (network.chainId.toString() !== networkName) {
+            return res.status(400).json({ error: 'El networkName no coincide con el RPC proporcionado' });
+        }
+
+        // Si la red no existe en el registro, inicializarla
+        if (!networks[networkName]) {
+            networks[networkName] = { networkName, nodes: [] };
+        }
+
+        // Agregar el nodo a la red
+        networks[networkName].nodes.push({ nodeId, provider });
+        res.json({ message: `Nodo ${nodeId} agregado a la red ${networkName}` });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al agregar el nodo a la red' });
+    }
+});
+
+/*
+// Ejemplo para obtener detalles de una red y sus nodos
+app.get('/network/:networkId', (req: Request, res: Response) => {
+  const { networkId } = req.params;
+
+  if (!networks[networkId]) {
+      return res.status(404).json({ error: 'Red no encontrada' });
+  }
+
+  // Extraer detalles de los nodos de la red solicitada
+  const network = networks[networkId];
+  const nodeDetails = network.nodes.map((node) => ({
+      nodeId: node.nodeId,
+      rpcUrl: node.provider.connection.url,
+  }));
+
+  res.json({ networkId: network.networkId, nodes: nodeDetails });
+});
+*/
+
+// Endpoint para obtener detalles de una red
+app.get('/network/:networkId', (req: Request, res: Response) => {
+  const { networkId } = req.params;
+
+  if (!networks[networkId]) {
+      return res.status(404).json({ error: 'Red no encontrada' });
+  }
+
+  const network = networks[networkId];
+  const nodeDetails = network.nodes.map((node) => ({
+      nodeId: node.nodeId,
+      rpcUrl: node.provider.connection.url,
+  }));
+
+  res.json({ networkId: network.networkId, nodes: nodeDetails });
+});
+
+// Endpoint para eliminar un nodo específico de una red Ethereum
+app.delete('/remove-node', (req: Request, res: Response) => {
+  const { networkId, nodeId } = req.body;
+
+  if (!networkId || !nodeId) {
+      return res.status(400).json({ error: 'networkId y nodeId son requeridos' });
+  }
+
+  if (!networks[networkId]) {
+      return res.status(404).json({ error: 'Red no encontrada' });
+  }
+
+  const network = networks[networkId];
+  const nodeIndex = network.nodes.findIndex((node) => node.nodeId === nodeId);
+
+  if (nodeIndex === -1) {
+      return res.status(404).json({ error: 'Nodo no encontrado en la red especificada' });
+  }
+
+  // Eliminar el nodo del array de nodos
+  network.nodes.splice(nodeIndex, 1);
+  res.json({ message: `Nodo ${nodeId} eliminado de la red ${networkId}` });
+});
 
 // Servidor
 app.listen(5555, () => {
