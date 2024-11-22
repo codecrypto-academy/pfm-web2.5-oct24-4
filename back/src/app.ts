@@ -345,7 +345,7 @@ app.get("/api/balance/:address", async (req: Request, res: Response) => {
       );
 },);
 
-//Obtener datos de una cuenta
+//Obtener datos de una cuenta 
 app.get("/api/faucet/:address/:amount", async (req: Request, res: Response) => {
   const { address, amount } = req.params;
   const provider = new ethers.JsonRpcProvider('process.env.URL_NODO');
