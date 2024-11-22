@@ -89,6 +89,7 @@ app.post(
         chainId: chainId,
         subnet: subnet,
         ipBootNode: ipBootNode,
+        nodes: [],
       });
 
       // Enviar respuesta exitosa
@@ -217,7 +218,7 @@ app.post('/add-node', async (req: Request, res: Response) => {
 
     try {
         // Crear un proveedor usando el rpcUrl del nodo
-        const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+        const provider = new ethers.JsonRpcProvider(rpcUrl);
 
         // Verificar la conexión y obtener la información de la red
         const network = await provider.getNetwork();
@@ -228,7 +229,7 @@ app.post('/add-node', async (req: Request, res: Response) => {
 
         // Si la red no existe en el registro, inicializarla
         if (!networks[networkName]) {
-            networks[networkName] = { networkName, nodes: [] };
+            networks[networkName] = { networkName, chainId: '', subnet: '', ipBootNode: '', nodes: [] };
         }
 
         // Agregar el nodo a la red
@@ -269,7 +270,7 @@ app.get('/network/:networkId', (req: Request, res: Response) => {
   }
 
   const network = networks[networkId];
-  const nodeDetails = network.nodes.map((node) => ({
+  const nodeDetails = network.nodes.map((node: Node) => ({
       nodeId: node.nodeId,
       rpcUrl: node.provider.connection.url,
   }));

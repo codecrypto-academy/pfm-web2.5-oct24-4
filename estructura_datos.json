@@ -1,0 +1,31 @@
+[
+    {
+        "id": "red2",
+        "chainId": "21",
+        "subnet": "172.16.239.0/24", 
+        "ipBootnode": "172.16.239.10",
+        "alloc": [
+
+        ],
+        "nodos": [
+            {
+                "type": "rpc",
+                "name": "rpc1",
+                "ip": "172.16.239.20",
+                "port": "8546"
+            },
+            {
+                "type": "miner",
+                "name": "miner1",
+                "ip": "172.16.239.30",
+                "port": ""
+            },
+            {
+                "type": "normal",
+                "name": "normal1",
+                "ip": "172.16.239.50",
+                "port": ""
+            }
+    ]
+    }
+]
