@@ -1,54 +1,54 @@
-import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import CreateNetworkForm from './components/CreateNetworkForm';
 import NetworkList from "./components/NetworkList";
-
-interface Network {
-  networkName: string;
-  chainId: string;
-  subnet: string;
-  ipBootNode: string;
-}
+import NetworkDetails from './components/NetworkDetails';
+import BlockList from './components/BlockList';
+import useNetworks from './hooks/useNetworks';
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const App: React.FC = () => {
-  const [networks, setNetworks] = useState<Network[]>([]);
-  
-  const fetchNetworks = async () => {
-    try {
-      const response = await fetch('http://localhost:5555/networks');
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      console.log("Networks fetched:", data); // Asegúrate de ver los datos en la consola
-      setNetworks(data);
-    } catch (error) {
-      console.error("Error fetching networks:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchNetworks();
-  }, []);
+  const { networks, fetchNetworks, error } = useNetworks();
 
   return (
-    <div className="app-container">
-      <Header />
-      <main className="py-10">
-        <div className="max-w-screen-lg mx-auto">
-
-        <CreateNetworkForm onNetworkCreated={fetchNetworks} /> {/* Paso de función de actualización */}
-
-          <div className="mt-8">
-        <h2 className="text-2xl font-semibold mb-4">Listado de Redes Privadas</h2>
-        <NetworkList networks={networks} refreshNetworks={fetchNetworks} /> {/* Pasar fetchNetworks como refreshNetworks */}
-
+    <Router>
+      <div className="app-container">
+      <ToastContainer />
+        <Header />
+        <main className="py-10">
+          <div className="max-w-screen-lg mx-auto">
+            {/* Formulario y listado principal */}
+            <CreateNetworkForm onNetworkCreated={fetchNetworks} />
+            {/* Configuración de rutas */}
+            <Routes>
+            <Route path="/" element={<Navigate to="/networks" />} />
+            <Route
+              path="/networks"
+              element={
+                <div>
+                  <h2 className="text-2xl font-semibold mb-4">Private network list</h2>
+                  {error ? (
+                    <p className="text-red-500">Error: {error}</p>
+                  ) : (
+                    <NetworkList networks={networks} refreshNetworks={fetchNetworks} />
+                  )}
+                </div>
+              }
+            />
+              {/* Ruta para detalles de red */}
+              <Route path="/network/:networkName" element={<NetworkDetails />} />
+              {/* Ruta para los bloques de una red específica */}
+              <Route path="/network/:networkName/blocks" element={<BlockList />} />
+              {/* Ruta para ver todos los bloques */}
+              <Route path="/blocks" element={<div>Show all blocks (TODO)</div>} />
+            </Routes>
+          </div>
+        </main>
+        <Footer />
       </div>
-        </div>
-      </main>
-      <Footer />
-    </div>
+    </Router>
   );
 };
 

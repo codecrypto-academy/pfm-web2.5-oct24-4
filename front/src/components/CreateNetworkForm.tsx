@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import axios from "axios";
+import InputField from "./InputField";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 interface CreateNetworkFormProps {
   onNetworkCreated: () => void;
@@ -18,7 +21,7 @@ const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated 
     e.preventDefault();
 
     if (!networkName || !chainId || !subnet || !ipBootNode) {
-      setError("Todos los campos son obligatorios.");
+      setError("All fields are mandatory.");
       return;
     }
 
@@ -33,7 +36,7 @@ const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated 
       console.log(response.data); // Verifica la respuesta
 
       if (response.data.message) {
-        setMessage(`Red creada con éxito: ${response.data.message}`);
+        toast.success(`Network created successfully: ${response.data.message}`);
         setTimeout(() => setMessage(""), 3000); // Mensaje desaparece después de 5 segundos
       }
 
@@ -45,7 +48,7 @@ const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated 
       onNetworkCreated();
       setShowForm(false); // Ocultar el formulario tras la creación
     } catch (err) {
-      setError("Error al crear la red. Inténtalo nuevamente.");
+      toast.error("Error creating the network. Try again later...");
       setMessage("");
     }
   };
@@ -66,63 +69,47 @@ const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated 
       
       {showForm && (
         <>
-          <h2 className="text-xl font-bold mb-4">Crear Red</h2>
+          <h2 className="text-xl font-bold mb-4">Create New Network</h2>
           {error && <div className="text-red-600 mb-2">{error}</div>}
           
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label htmlFor="networkName" className="block text-sm font-medium">
-                Nombre de la Red
-              </label>
-              <input
+              <InputField
                 id="networkName"
-                type="text"
+                label="Network name"
                 value={networkName}
                 onChange={(e) => setNetworkName(e.target.value)}
-                className="w-full p-2 mt-2 border rounded-md"
-                placeholder="Ingrese el nombre de la red"
+                placeholder="Enter the Network name"
               />
             </div>
 
             <div className="mb-4">
-              <label htmlFor="chainId" className="block text-sm font-medium">
-                Chain ID
-              </label>
-              <input
+              <InputField
                 id="chainId"
-                type="text"
+                label="Chain ID"
                 value={chainId}
                 onChange={(e) => setChainId(e.target.value)}
-                className="w-full p-2 mt-2 border rounded-md"
-                placeholder="Ingrese el Chain ID"
+                placeholder="Enter the Chain ID"
               />
             </div>
 
             <div className="mb-4">
-              <label htmlFor="subnet" className="block text-sm font-medium">
-                Subnet
-              </label>
-              <input
+              <InputField
                 id="subnet"
-                type="text"
+                label="Subnet"
                 value={subnet}
                 onChange={(e) => setSubnet(e.target.value)}
-                className="w-full p-2 mt-2 border rounded-md"
-                placeholder="Ingrese el Subnet"
+                placeholder="Enter the Subnet"
               />
             </div>
 
             <div className="mb-4">
-              <label htmlFor="ipBootNode" className="block text-sm font-medium">
-                IP Boot Node
-              </label>
-              <input
+              <InputField
                 id="ipBootNode"
-                type="text"
+                label="IP Boot Node"
                 value={ipBootNode}
                 onChange={(e) => setIpBootNode(e.target.value)}
-                className="w-full p-2 mt-2 border rounded-md"
-                placeholder="Ingrese la IP Boot Node"
+                placeholder="Enter the IP Boot Node"
               />
             </div>
             
@@ -130,7 +117,7 @@ const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated 
               type="submit"
               className="w-full p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
             >
-              Crear Red
+              Create network
             </button>
           </form>
         </>
