@@ -11,3 +11,9 @@
 footer {
   margin-top: auto;
 }
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+  }
+}
