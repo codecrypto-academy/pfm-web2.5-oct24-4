@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
-import ethers from "ethers";
+import ethers, { JsonRpcProvider } from "ethers";
 import fs from "fs";
 import bodyParser from "body-parser";
 
@@ -10,7 +10,7 @@ const docker = new Docker();
 const path = require("path");
 
 //carga las variables de entorno
-require('dotenv').config();
+require("dotenv").config();
 
 // Middlewares
 app.use(express.json());
@@ -28,11 +28,11 @@ interface Network {
 
 interface Node {
   nodeId: string;
-  provider: ethers.JsonRpcProvider; // Proveedor de nodos
+  provider: JsonRpcProvider; // Proveedor de nodos
 }
 
 // Almacenamiento temporal de redes
-let networks: Network[] = []; // Puedes usar un arreglo para almacenar los nombres de las redes
+const networks: Record<string, Network> = {}; // Puedes usar un arreglo para almacenar los nombres de las redes
 
 // Ruta para crear una red
 app.post(
@@ -89,13 +89,13 @@ app.post(
       await container.start();
 
       // Añadir la red al arreglo de redes
-      networks.push({
-        networkName: networkName,
-        chainId: chainId,
-        subnet: subnet,
-        ipBootNode: ipBootNode,
+      networks[networkName] = {
+        networkName,
+        chainId,
+        subnet,
+        ipBootNode,
         nodes: [],
-      });
+      };
 
       // Enviar respuesta exitosa
       return res.status(201).json({
@@ -129,7 +129,7 @@ app.get(
     const { networkName } = req.params;
 
     // Buscar la red en la lista de redes (o base de datos)
-    const network = networks.find((net) => net.networkName === networkName);
+    const network = networks[networkName];
 
     if (!network) {
       return res.status(404).json({ error: "Red no encontrada" });
@@ -174,18 +174,14 @@ app.delete(
   async (req: Request, res: Response): Promise<Response> => {
     const { networkName } = req.params;
 
-    // Buscamos si la red existe
-    const networkIndex = networks.findIndex(
-      (network) => network.networkName === networkName
-    );
-
-    if (networkIndex === -1) {
+    // Verificamos si la red existe en el objeto
+    if (!networks[networkName]) {
       return res.status(404).json({ error: "Red no encontrada" });
     }
 
     try {
-      // Aquí eliminamos la red de la lista
-      networks.splice(networkIndex, 1);
+      // Aquí eliminamos la red del objeto usando 'delete'
+      delete networks[networkName];
 
       // También debemos detener y eliminar el contenedor de Docker asociado (si lo hay)
       const containerName = `geth-${networkName}`;
@@ -214,36 +210,46 @@ app.delete(
 );
 
 // Función para añadir un nodo a una red Ethereum existente
-app.post('/add-node', async (req: Request, res: Response) => {
-    const { networkName, nodeId, rpcUrl } = req.body;
+app.post("/add-node", async (req: Request, res: Response) => {
+  const { networkName, nodeId, rpcUrl } = req.body;
 
-    if (!networkName || !nodeId || !rpcUrl) {
-        return res.status(400).json({ error: 'networkName, nodeId y rpcUrl son requeridos' });
+  if (!networkName || !nodeId || !rpcUrl) {
+    return res
+      .status(400)
+      .json({ error: "networkName, nodeId y rpcUrl son requeridos" });
+  }
+
+  try {
+    // Crear un proveedor usando el rpcUrl del nodo
+    const provider = new ethers.JsonRpcProvider(rpcUrl);
+
+    // Verificar la conexión y obtener la información de la red
+    const network = await provider.getNetwork();
+
+    if (network.chainId.toString() !== networkName) {
+      return res
+        .status(400)
+        .json({ error: "El networkName no coincide con el RPC proporcionado" });
     }
 
-    try {
-        // Crear un proveedor usando el rpcUrl del nodo
-        const provider = new ethers.JsonRpcProvider(rpcUrl);
-
-        // Verificar la conexión y obtener la información de la red
-        const network = await provider.getNetwork();
-
-        if (network.chainId.toString() !== networkName) {
-            return res.status(400).json({ error: 'El networkName no coincide con el RPC proporcionado' });
-        }
-
-        // Si la red no existe en el registro, inicializarla
-        if (!networks[networkName]) {
-            networks[networkName] = { networkName, chainId: '', subnet: '', ipBootNode: '', nodes: [] };
-        }
-
-        // Agregar el nodo a la red
-        networks[networkName].nodes.push({ nodeId, provider });
-        res.json({ message: `Nodo ${nodeId} agregado a la red ${networkName}` });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Error al agregar el nodo a la red' });
+    // Si la red no existe en el registro, inicializarla
+    if (!networks[networkName]) {
+      networks[networkName] = {
+        networkName,
+        chainId: "",
+        subnet: "",
+        ipBootNode: "",
+        nodes: [],
+      };
     }
+
+    // Agregar el nodo a la red
+    networks[networkName].nodes.push({ nodeId, provider });
+    res.json({ message: `Nodo ${nodeId} agregado a la red ${networkName}` });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al agregar el nodo a la red" });
+  }
 });
 
 /*
@@ -267,39 +273,41 @@ app.get('/network/:networkId', (req: Request, res: Response) => {
 */
 
 // Endpoint para obtener detalles de una red
-app.get('/network/:networkId', (req: Request, res: Response) => {
+app.get("/network/:networkId", (req: Request, res: Response) => {
   const { networkId } = req.params;
 
   if (!networks[networkId]) {
-      return res.status(404).json({ error: 'Red no encontrada' });
+    return res.status(404).json({ error: "Red no encontrada" });
   }
 
   const network = networks[networkId];
   const nodeDetails = network.nodes.map((node: Node) => ({
-      nodeId: node.nodeId,
-      rpcUrl: node.provider.connection.url,
+    nodeId: node.nodeId,
+    rpcUrl: node.provider,
   }));
 
-  res.json({ networkId: network.networkId, nodes: nodeDetails });
+  res.json({ networkId: network.networkName, nodes: nodeDetails });
 });
 
 // Endpoint para eliminar un nodo específico de una red Ethereum
-app.delete('/remove-node', (req: Request, res: Response) => {
+app.delete("/remove-node", (req: Request, res: Response) => {
   const { networkId, nodeId } = req.body;
 
   if (!networkId || !nodeId) {
-      return res.status(400).json({ error: 'networkId y nodeId son requeridos' });
+    return res.status(400).json({ error: "networkId y nodeId son requeridos" });
   }
 
   if (!networks[networkId]) {
-      return res.status(404).json({ error: 'Red no encontrada' });
+    return res.status(404).json({ error: "Red no encontrada" });
   }
 
   const network = networks[networkId];
   const nodeIndex = network.nodes.findIndex((node) => node.nodeId === nodeId);
 
   if (nodeIndex === -1) {
-      return res.status(404).json({ error: 'Nodo no encontrado en la red especificada' });
+    return res
+      .status(404)
+      .json({ error: "Nodo no encontrado en la red especificada" });
   }
 
   // Eliminar el nodo del array de nodos
@@ -307,61 +315,114 @@ app.delete('/remove-node', (req: Request, res: Response) => {
   res.json({ message: `Nodo ${nodeId} eliminado de la red ${networkId}` });
 });
 
+// Endpoint para obtener los últimos 10 bloques de una red específica
+app.get("/network/:networkName/blocks", async (req: Request, res: Response) => {
+  const { networkName } = req.params;
+
+  // Buscar la red en la lista de redes (o base de datos)
+  const network = networks[networkName];
+
+  if (!network) {
+    return res.status(404).json({ error: "Red no encontrada" });
+  }
+
+  // Verificar si hay nodos asociados
+  if (network.nodes.length === 0) {
+    return res
+      .status(404)
+      .json({ error: "No hay nodos configurados para esta red" });
+  }
+
+  try {
+    // Usar el primer nodo como referencia para obtener datos de la red
+    const provider = network.nodes[0]?.provider;
+
+    // Obtener el bloque más reciente
+    const latestBlockNumber = await provider.getBlockNumber();
+
+    // Obtener los últimos 10 bloques
+    const blocks = [];
+    for (let i = latestBlockNumber; i > latestBlockNumber - 10 && i >= 0; i--) {
+      const block = await provider.getBlock(i);
+      if (!block) {
+        continue; // Saltar bloques nulos
+      }
+      blocks.push({
+        blockNumber: block.number,
+        timestamp: block.timestamp,
+        hash: block.hash,
+        transactionCount: block.transactions.length,
+      });
+    }
+
+    res.json(blocks);
+  } catch (error) {
+    console.error("Error al obtener los bloques:", error);
+    res.status(500).json({ error: "Error al obtener los bloques de la red" });
+  }
+});
+
 //Faucet
 //Faucet - Obtener balance con ethers
 app.get("/api/balanceEthers/:address", async (req: Request, res: Response) => {
   const address = req.params.address;
-  const provider = new ethers.JsonRpcProvider('process.env.URL_NODO');
+  const provider = new ethers.JsonRpcProvider("process.env.URL_NODO");
   const balance = await provider.getBalance(address);
-  res.json(
-      {address,
-      balance: (Number(balance)/10**18),
-      fecha: new Date().toISOString()}
-  );
-},);
+  res.json({
+    address,
+    balance: Number(balance) / 10 ** 18,
+    fecha: new Date().toISOString(),
+  });
+});
 
 //Faucet - Obtener balance con Fetch
 app.get("/api/balance/:address", async (req: Request, res: Response) => {
   const address = req.params;
   const retorno = await fetch(process.env.URL_NODO as string, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          jsonrpc: "2.0",
-          method: "eth_getBalance",
-          params: [
-            address,
-            "latest"
-          ],
-          id: 1
-        })
-      }) 
-      const data: any = await retorno.json(); 
-      res.json(
-          {address,
-          balance: (Number(data.result)/10**18),
-          fecha: new Date().toISOString()}
-      );
-},);
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      method: "eth_getBalance",
+      params: [address, "latest"],
+      id: 1,
+    }),
+  });
+  const data: any = await retorno.json();
+  res.json({
+    address,
+    balance: Number(data.result) / 10 ** 18,
+    fecha: new Date().toISOString(),
+  });
+});
 
 //Faucet - Obtener informacion de cuenta
 app.get("/api/faucet/:address/:amount", async (req: Request, res: Response) => {
   const { address, amount } = req.params;
-  const provider = new ethers.JsonRpcProvider('process.env.URL_NODO');
+  const provider = new ethers.JsonRpcProvider("process.env.URL_NODO");
   const ruta = process.env.KEYSTORE_FILE as string;
   const rutaData = fs.readFileSync(ruta, "utf-8");
   console.log(rutaData);
-  const wallet = await ethers.Wallet.fromEncryptedJson(rutaData, process.env.KEYSTORE_PWD as string);
+  const wallet = await ethers.Wallet.fromEncryptedJson(
+    rutaData,
+    process.env.KEYSTORE_PWD as string
+  );
   const WalletConnected = wallet.connect(provider);
   const tx = await WalletConnected.sendTransaction({
     to: address,
-    value: ethers.parseEther(amount)
+    value: ethers.parseEther(amount),
   });
   const tx1 = await tx.wait();
-  const balance = await provider.getBalance(address)
-  res.json({tx1, address, amount, balance: Number(balance)/10**18, fecha: new Date().toISOString()});
+  const balance = await provider.getBalance(address);
+  res.json({
+    tx1,
+    address,
+    amount,
+    balance: Number(balance) / 10 ** 18,
+    fecha: new Date().toISOString(),
+  });
 });
 
 // Servidor
