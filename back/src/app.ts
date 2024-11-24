@@ -1,11 +1,16 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import ethers from "ethers";
+import fs from "fs";
 import bodyParser from "body-parser";
+
 const Docker = require("dockerode");
 const app = express();
 const docker = new Docker();
 const path = require("path");
+
+//carga las variables de entorno
+require('dotenv').config();
 
 // Middlewares
 app.use(express.json());
@@ -300,6 +305,63 @@ app.delete('/remove-node', (req: Request, res: Response) => {
   // Eliminar el nodo del array de nodos
   network.nodes.splice(nodeIndex, 1);
   res.json({ message: `Nodo ${nodeId} eliminado de la red ${networkId}` });
+});
+
+//Faucet
+//Faucet - Obtener balance con ethers
+app.get("/api/balanceEthers/:address", async (req: Request, res: Response) => {
+  const address = req.params.address;
+  const provider = new ethers.JsonRpcProvider('process.env.URL_NODO');
+  const balance = await provider.getBalance(address);
+  res.json(
+      {address,
+      balance: (Number(balance)/10**18),
+      fecha: new Date().toISOString()}
+  );
+},);
+
+//Faucet - Obtener balance con Fetch
+app.get("/api/balance/:address", async (req: Request, res: Response) => {
+  const address = req.params;
+  const retorno = await fetch(process.env.URL_NODO as string, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          jsonrpc: "2.0",
+          method: "eth_getBalance",
+          params: [
+            address,
+            "latest"
+          ],
+          id: 1
+        })
+      }) 
+      const data: any = await retorno.json(); 
+      res.json(
+          {address,
+          balance: (Number(data.result)/10**18),
+          fecha: new Date().toISOString()}
+      );
+},);
+
+//Faucet - Obtener informacion de cuenta
+app.get("/api/faucet/:address/:amount", async (req: Request, res: Response) => {
+  const { address, amount } = req.params;
+  const provider = new ethers.JsonRpcProvider('process.env.URL_NODO');
+  const ruta = process.env.KEYSTORE_FILE as string;
+  const rutaData = fs.readFileSync(ruta, "utf-8");
+  console.log(rutaData);
+  const wallet = await ethers.Wallet.fromEncryptedJson(rutaData, process.env.KEYSTORE_PWD as string);
+  const WalletConnected = wallet.connect(provider);
+  const tx = await WalletConnected.sendTransaction({
+    to: address,
+    value: ethers.parseEther(amount)
+  });
+  const tx1 = await tx.wait();
+  const balance = await provider.getBalance(address)
+  res.json({tx1, address, amount, balance: Number(balance)/10**18, fecha: new Date().toISOString()});
 });
 
 // Servidor
