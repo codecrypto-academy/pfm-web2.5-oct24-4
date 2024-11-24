@@ -12,7 +12,7 @@ const Header: React.FC = () => {
         <nav>
           <ul className="flex space-x-6">
             <li><a href="#home" className="hover:text-yellow-300">Home</a></li>
-            <li><a href="#home" className="hover:text-yellow-300">Faucet</a></li>
+            <li><a href="#faucet" className="hover:text-yellow-300">Faucet</a></li>
             <li><a href="#about" className="hover:text-yellow-300">About</a></li>
             <li><a href="#contact" className="hover:text-yellow-300">Contact</a></li>
           </ul>
