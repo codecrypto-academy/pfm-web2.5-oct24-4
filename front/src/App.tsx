@@ -34,7 +34,19 @@ const App: React.FC = () => {
 
   useEffect(() => {
     fetchNetworks();
-  }, []);
+    const ethereum = (window as any).ethereum;
+    if (ethereum == null){
+      alert("Please install MetaMask");
+      return;
+    }
+    ethereum.request({ method: 'eth_requestAccounts' }).then((acc: string[]) => {
+      setState({ acc: acc[0] });
+    });
+    ethereum.on('accountsChanged', (acc: string[]) => {
+      setState({ acc: acc[0] });
+    } 
+
+}, [setState]);
 
   return (
     <div className="app-container">
