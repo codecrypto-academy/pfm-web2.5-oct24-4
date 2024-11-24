@@ -1,8 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, createContext } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import CreateNetworkForm from './components/CreateNetworkForm';
 import NetworkList from "./components/NetworkList";
+import { Balance } from './components/Balance';
+import { Faucet } from './components/Faucet';
+import { Transfer } from './components/Transfer';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 interface Network {
   networkName: string;
@@ -51,5 +55,7 @@ const App: React.FC = () => {
     </div>
   );
 };
+
+export const UserContext = createContext({});
 
 export default App;
