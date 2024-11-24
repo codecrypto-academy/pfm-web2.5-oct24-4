@@ -3,6 +3,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import CreateNetworkForm from './components/CreateNetworkForm';
 import NetworkList from "./components/NetworkList";
+import { createBrowserRouter, Outlet, RouterProvider } from 'react-router-dom'; // Importar BrowserRouter
 
 interface Network {
   networkName: string;
