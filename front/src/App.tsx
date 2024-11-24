@@ -135,6 +135,8 @@ const App: React.FC = () => {
         <Route path="/network/:networkName/blocks" element={<BlockList />} />
         {/* Ruta para ver todos los bloques */}
         <Route path="/blocks" element={<div>Show all blocks (TODO)</div>} />
+        {/* Ruta para ver todos los bloques */}
+        <Route path="/faucet" element={<Transfer />} />
       </Routes>
       </main>
       <Footer />
