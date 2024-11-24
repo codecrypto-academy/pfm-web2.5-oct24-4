@@ -34,6 +34,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     fetchNetworks();
+    //Conexión a MetaMask y obtención de cuenta
     const ethereum = (window as any).ethereum;
     if (ethereum == null){
       alert("Please install MetaMask");
