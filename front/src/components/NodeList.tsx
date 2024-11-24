@@ -10,9 +10,10 @@ interface NodesTableProps {
   nodes: Node[];
   setShowAddNodeForm: React.Dispatch<React.SetStateAction<boolean>>;
   onDismiss: () => void;
+  removeNode: (id: string) => void;
 }
 
-const NodeList: React.FC<NodesTableProps> = ({ selectedNetwork, nodes, setShowAddNodeForm, onDismiss  }) => {
+const NodeList: React.FC<NodesTableProps> = ({ selectedNetwork, nodes, setShowAddNodeForm, onDismiss, removeNode  }) => {
 
   return (
     <div className="flex flex-col w-full border border-gray-300 rounded-lg p-4 shadow-md">
@@ -30,6 +31,14 @@ const NodeList: React.FC<NodesTableProps> = ({ selectedNetwork, nodes, setShowAd
               <tr key={node.id} className="odd:bg-white even:bg-gray-50 hover:bg-gray-100">
                 <td className="border border-gray-300 px-4 py-2">{node.id}</td>
                 <td className="border border-gray-300 px-4 py-2">{node.nodeNumber}</td>
+                <td className="border border-gray-300 px-4 py-2">
+                  <button
+                    onClick={() => removeNode(node.id)}
+                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded"
+                  >
+                    Remove
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>

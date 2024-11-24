@@ -1,23 +1,16 @@
-import React, { useState } from "react";
+import React from "react";
+import { Network } from "../types";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Link } from "react-router-dom";
 
-interface Network {
-  networkName: string;
-  chainId: string;
-  subnet: string;
-  ipBootNode: string;
-}
 
-interface NetworkListProps {
-  networks: Network[];
-  onNetworkClick: (network: Network) => void;
-  refreshNetworks?: () => void;
-}
 
-const NetworkList: React.FC<NetworkListProps> = ({ networks, onNetworkClick, refreshNetworks}) => {
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-    const handleDeleteNetwork = async (networkName: string) => {
+const NetworkList: React.FC<{ networks: Network[]; refreshNetworks?: () => void; handleShowNodes: (network: Network) => void }> = ({
+  networks, refreshNetworks, handleShowNodes
+}) => {
+
+  const handleDeleteNetwork = async (networkName: string) => {
     try {
       const response = await fetch(`http://localhost:5555/delete-network/${networkName}`, {
         method: "DELETE",
@@ -36,7 +29,9 @@ const NetworkList: React.FC<NetworkListProps> = ({ networks, onNetworkClick, ref
   return (
     <div className="flex flex-col w-full border border-gray-300 rounded-lg p-4 shadow-md"> 
       <h2 className="text-lg font-bold mb-4">Listado de Redes</h2>
-      {statusMessage && <p className="status-message">{statusMessage}</p>}
+      {networks.length === 0 ? (
+        <p>No networks created yet.</p>
+      ) : (
       <table className="table-auto w-full border-collapse border border-gray-300 shadow-md">
         <thead className="bg-gray-100">
           <tr>
@@ -55,8 +50,14 @@ const NetworkList: React.FC<NetworkListProps> = ({ networks, onNetworkClick, ref
               <td className="border border-gray-300 px-4 py-1">{network.subnet}</td>
               <td className="border border-gray-300 px-4 py-1">{network.ipBootNode}</td>
               <td className="border border-gray-300 px-4 py-1">
+                <Link to={`/network/${network.networkName}/blocks`}>
+                  <button className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-1 px-1 mt-4 rounded">
+                    Show Blocks
+                  </button>
+                </Link>
+
                 <button
-                  onClick={() => onNetworkClick(network)}
+                  onClick={() => handleShowNodes(network)}
                   className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-1 mt-4 rounded"
                 >
                   Show nodes
@@ -73,6 +74,7 @@ const NetworkList: React.FC<NetworkListProps> = ({ networks, onNetworkClick, ref
           ))}
         </tbody>
       </table>
+      )}
     </div>
   );
 };

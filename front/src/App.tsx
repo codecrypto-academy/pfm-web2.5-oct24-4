@@ -23,9 +23,14 @@ interface Network {
 const App: React.FC = () => {
   const { networks, fetchNetworks, error } = useNetworks();
   const [selectedNetwork, setSelectedNetwork] = useState<Network | null>(null);
-  const [nodes, setNodes] = useState<any[]>([]); // Asegúrate de definir un tipo adecuado para nodes
+  const [nodes, setNodes] = useState<any[]>([]);
   const [showAddNodeForm, setShowAddNodeForm] = useState(false);
   const [showNodeList, setShowNodeList] = useState(true);
+
+  const handleShowNodes = (network: Network) => {
+    setSelectedNetwork(network);
+    fetchNodes(network.networkName);
+  };
 
   const fetchNodes = async (networkName: string) => {
     try {
@@ -41,10 +46,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleShowNodes = (network: Network) => {
-    setSelectedNetwork(network);
-    fetchNodes(network.networkName);
-  };
+  
 
   const addNodeToNetwork = (data: { nodeNumber: number }) => {
     if (selectedNetwork) {
@@ -62,6 +64,10 @@ const App: React.FC = () => {
     const handleDismissAddNodeForm = () => {
       setShowAddNodeForm(false); // Cambiar el estado para ocultar NodesTable
     }
+
+    const removeNode = (id: string) => {
+      setNodes((prevNodes) => prevNodes.filter((node) => node.id !== id));
+    };
 
   return (
     <Router>
@@ -86,7 +92,7 @@ const App: React.FC = () => {
                 {error ? (
                     <p className="text-red-500">Error: {error}</p>
                   ) : (
-                  <NetworkList networks={networks} onNetworkClick={handleShowNodes} refreshNetworks={fetchNetworks} />
+                  <NetworkList networks={networks} handleShowNodes={handleShowNodes} refreshNetworks={fetchNetworks} />
                 )}
                   </div>
 
@@ -98,6 +104,7 @@ const App: React.FC = () => {
                       nodes={nodes}
                       setShowAddNodeForm={setShowAddNodeForm}
                       onDismiss={handleDismissNodeList}
+                      removeNode={removeNode}
                     />
                   ) : (
                     <p className="text-gray-400 italic">Seleccione una red para ver los nodos.</p>
