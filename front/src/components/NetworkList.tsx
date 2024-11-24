@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import NewNodeForm from "./NewNodeForm"; // Assuming you have this component
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 interface Network {
   networkName: string;
@@ -8,149 +9,70 @@ interface Network {
   ipBootNode: string;
 }
 
-interface Node {
-  id: string;
-  nodeNumber: number;
-}
-
 interface NetworkListProps {
   networks: Network[];
+  onNetworkClick: (network: Network) => void;
   refreshNetworks?: () => void;
 }
 
-const NetworkList: React.FC<NetworkListProps> = ({ networks, refreshNetworks }) => {
+const NetworkList: React.FC<NetworkListProps> = ({ networks, onNetworkClick, refreshNetworks}) => {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [selectedNetwork, setSelectedNetwork] = useState<Network | null>(null);
-  const [nodes, setNodes] = useState<Node[]>([]);
-  const [showAddNodeForm, setShowAddNodeForm] = useState(false);
-
-  const handleDeleteNetwork = async (networkName: string) => {
+    const handleDeleteNetwork = async (networkName: string) => {
     try {
       const response = await fetch(`http://localhost:5555/delete-network/${networkName}`, {
         method: "DELETE",
       });
 
       if (response.ok) {
-        setStatusMessage(`La red "${networkName}" ha sido eliminada.`);
-        refreshNetworks?.();
-
-        setTimeout(() => setStatusMessage(null), 3000);
+        toast.success(`Network "${networkName}" has been eliminated.`);
+        refreshNetworks?.(); // Refrescar la lista de redes después de la eliminación
       } else {
-        console.error("Error al eliminar la red:", response.statusText);
+        toast.error(`Error eliminating the network: ${response.statusText}`);
       }
     } catch (error) {
-      console.error("Error al eliminar la red:", error);
+      toast.error(`Error in deletion request: ${error}` );
     }
   };
-
-  const handleShowNodes = async (network: Network) => {
-    setSelectedNetwork(network);
-    setShowAddNodeForm(false);
-
-    try {
-      const response = await fetch(`http://localhost:5555/networks/${network.networkName}/nodes`);
-      if (response.ok) {
-        const data = await response.json();
-        setNodes(data);
-      } else {
-        setNodes([]);
-        console.error("Error fetching nodes:", response.statusText);
-      }
-    } catch (error) {
-      console.error("Error fetching nodes:", error);
-      setNodes([]);
-    }
-  };
-
-  const handleAddNode = async (nodeData: { nodeNumber: number }) => {
-    if (selectedNetwork) {
-      try {
-        const response = await fetch(`http://localhost:5555/networks/${selectedNetwork.networkName}/add-node`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(nodeData),
-        });
-
-        if (response.ok) {
-          alert("Nodo añadido exitosamente.");
-          handleShowNodes(selectedNetwork); // Refresh the nodes
-          setShowAddNodeForm(false);
-        } else {
-          console.error("Error al añadir nodo:", response.statusText);
-        }
-      } catch (error) {
-        console.error("Error al añadir nodo:", error);
-      }
-    }
-  };
-
   return (
-    <div style={{ display: "flex", gap: "20px" }}>
-      {/* Network Table */}
-      <div>
-        <h2>Listado de Redes</h2>
-        {statusMessage && <p className="status-message">{statusMessage}</p>}
-        <table border="1" style={{ width: "500px", textAlign: "left" }}>
-          <thead>
-            <tr>
-              <th>Network Name</th>
-              <th>Chain ID</th>
-              <th>Subnet</th>
-              <th>IP Boot Node</th>
-              <th>Actions</th>
+    <div className="flex flex-col w-full border border-gray-300 rounded-lg p-4 shadow-md"> 
+      <h2 className="text-lg font-bold mb-4">Listado de Redes</h2>
+      {statusMessage && <p className="status-message">{statusMessage}</p>}
+      <table className="table-auto w-full border-collapse border border-gray-300 shadow-md">
+        <thead className="bg-gray-100">
+          <tr>
+            <th className="border border-gray-300 px-4 py-2 text-left">Network Name</th>
+            <th className="border border-gray-300 px-4 py-2 text-left">Chain ID</th>
+            <th className="border border-gray-300 px-4 py-2 text-left">Subnet</th>
+            <th className="border border-gray-300 px-4 py-2 text-left">IP Boot Node</th>
+            <th className="border border-gray-300 px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {networks.map((network) => (
+            <tr key={network.networkName} className="odd:bg-white even:bg-gray-50 hover:bg-gray-100">
+              <td className="border border-gray-300 px-4 py-1">{network.networkName}</td>
+              <td className="border border-gray-300 px-4 py-1">{network.chainId}</td>
+              <td className="border border-gray-300 px-4 py-1">{network.subnet}</td>
+              <td className="border border-gray-300 px-4 py-1">{network.ipBootNode}</td>
+              <td className="border border-gray-300 px-4 py-1">
+                <button
+                  onClick={() => onNetworkClick(network)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-1 mt-4 rounded"
+                >
+                  Show nodes
+                </button>
+                
+                <button
+                  onClick={() => handleDeleteNetwork(network.networkName)}
+                  className="bg-red-500 hover:bg-blue-600 text-white font-bold py-1 px-1 mt-4 rounded"
+                >
+                  Eliminate network
+                </button>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {networks.map((network) => (
-              <tr key={network.networkName}>
-                <td>{network.networkName}</td>
-                <td>{network.chainId}</td>
-                <td>{network.subnet}</td>
-                <td>{network.ipBootNode}</td>
-                <td>
-                  <button onClick={() => handleShowNodes(network)}>Mostrar Nodos</button>
-                  <button onClick={() => handleDeleteNetwork(network.networkName)}>Eliminar</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Nodes Table */}
-      {selectedNetwork && (
-        <div>
-          <h2>Nodos de la Red: {selectedNetwork.networkName}</h2>
-          {nodes.length > 0 ? (
-            <table border="1" style={{ width: "400px", textAlign: "left" }}>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Node Number</th>
-                </tr>
-              </thead>
-              <tbody>
-                {nodes.map((node) => (
-                  <tr key={node.id}>
-                    <td>{node.id}</td>
-                    <td>{node.nodeNumber}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p>No hay nodos disponibles.</p>
-          )}
-          <button onClick={() => setShowAddNodeForm(true)}>Añadir Nuevo Nodo</button>
-
-          {/* Add Node Form */}
-          {showAddNodeForm && (
-            <NewNodeForm
-              addNodeToNetwork={(nodeData) => handleAddNode(nodeData)}
-            />
-          )}
-        </div>
-      )}
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };
