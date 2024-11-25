@@ -116,7 +116,8 @@ app.post(
 app.get("/networks", (req, res) => {
   try {
     // Código para obtener la lista de redes creadas
-    res.json(networks);
+    const networkArray = Object.values(networks); // Convert object to array
+    res.json(networkArray);
   } catch (error) {
     console.error("Error al obtener las redes:", error);
     res.status(500).json({ error: "Error al obtener las redes" });

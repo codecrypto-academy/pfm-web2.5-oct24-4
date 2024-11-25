@@ -43,7 +43,7 @@ const NetworkList: React.FC<{ networks: Network[]; refreshNetworks?: () => void;
           </tr>
         </thead>
         <tbody>
-          {networks.map((network) => (
+      {(Array.isArray(networks) ? networks : []).map((network) => (
             <tr key={network.networkName} className="odd:bg-white even:bg-gray-50 hover:bg-gray-100">
               <td className="border border-gray-300 px-4 py-1">{network.networkName}</td>
               <td className="border border-gray-300 px-4 py-1">{network.chainId}</td>
