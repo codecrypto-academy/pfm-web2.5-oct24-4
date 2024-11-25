@@ -1,3 +1,4 @@
+Este es el del front:
 # Logs
 logs
 *.log
@@ -18,7 +19,7 @@ dist-ssr
 .idea
 .DS_Store
 *.suo
-*.ntvs*
+.ntvs
 *.njsproj
 *.sln
 *.sw?

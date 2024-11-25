@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import React, { useEffect, useState, createContext } from 'react';
+import React, { useState, createContext } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import CreateNetworkForm from './components/CreateNetworkForm';
@@ -11,11 +11,8 @@ import NodeList from './components/NodeList';
 import NewNodeForm from './components/NewNodeForm';
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-import { Balance } from './components/Balance';
 import { Faucet } from './components/Faucet';
 import { Transfer } from './components/Transfer';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 interface Network {
   networkName: string;
@@ -73,7 +70,12 @@ const App: React.FC = () => {
       setNodes((prevNodes) => prevNodes.filter((node) => node.id !== id));
     };
 
-  return (
+    const [state, setState] = useState({
+      acc: '',
+      networkName: '',    
+    });
+
+  return <UserContext.Provider value={{ state, setState }}>
     <Router>
     <div className="app-container">
     <ToastContainer/>
@@ -135,12 +137,17 @@ const App: React.FC = () => {
         <Route path="/network/:networkName/blocks" element={<BlockList />} />
         {/* Ruta para ver todos los bloques */}
         <Route path="/blocks" element={<div>Show all blocks (TODO)</div>} />
+        {/* Ruta del Transfer */}
+        <Route path="/transfer" element={<Transfer />} />
+        {/* Ruta del Faucet */}
+        <Route path="/faucet" element={<Faucet />} />
       </Routes>
       </main>
       <Footer />
     </div>
     </Router>  
     );
+    </UserContext.Provider>
 };
 
 export const UserContext = createContext({});
