@@ -19,7 +19,7 @@ const useNetworks = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      setNetworks(data);
+      setNetworks(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error fetching networks:", err);
       setError((err as Error).message);
