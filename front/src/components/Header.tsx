@@ -18,6 +18,9 @@ const Header: React.FC = () => {
             <Link to={`/faucet`}> 
               <li><a href="#faucet" className="hover:text-yellow-300">Faucet</a></li>
             </Link>
+            <Link to={`/transfer`}> 
+              <li><a href="#transfer" className="hover:text-yellow-300">Transfer</a></li>
+            </Link>
             <li><a href="#about" className="hover:text-yellow-300">About</a></li>
             <li><a href="#contact" className="hover:text-yellow-300">Contact</a></li>
           </ul>
