@@ -1,0 +1,46 @@
+
+¡¡¡CUIDADO!!! Recordar entrar primeramente al directory donde se encuentran data, pass.txt, genesis.json -> en este caso D:\MasterIngenieroBlockchain\curso\faucet2024\nodo
+
+//--- Creamos un volumen con el pass, otro con el directorio de datos, usamos cliente eth, creamos nueva cuenta y añadimos dir y pass
+docker run -v ${PWD}/pass.txt:/pass.txt -v ${PWD}/data:/data ethereum/client-go:v1.11.5 account new --datadir /data --password /pass.txt
+
+//--- La dirección que se genera en data/keystore la usamos en el genesis.json (en extradata y en el primer alloc) con cuidado que tenga la misma cantidad de digitos
+
+//--- Nota: Usar un chainId alto para no entrar en conflicto con las redes principales
+
+//--- Crear base de datos de blockchain
+docker run -v ${PWD}/genesis.json:/genesis.json -v ${PWD}/data:/data ethereum/client-go:v1.11.5 init --datadir /data genesis.json
+
+//--- Lo mismo de antes pero además introducimos datos de minado (cambiar *cuenta* por la dirección del data/keystore)
+docker run -d --rm -p 9999:8545 -v ${PWD}/pass.txt:/pass.txt -v ${PWD}/data:/data ethereum/client-go:v1.11.5 --datadir /data --password /pass.txt --allow-insecure-unlock --miner.etherbase *cuenta* --mine --unlock "*cuenta*" --http --http.addr "0.0.0.0" --http.port 8545 --http.corsdomain "*" --http.api "admin,eth,debug,miner,net,txpool,personal,web3"
+
+//--- Si borras --rm del anterior comando, permites que el contenedor no se borre en docker y si añades -d, liberas la consola y te devuelve el id del contenedor. 
+//--- Si haces: docker logs (los 3 primeros números del id), te aparece el log del container.
+
+//--- Comandos para vscode para obtener datos de las wallet y demás:
+https://documenter.getpostman.com/view/4117254/ethereum-json-rpc/RVu7CT5J
+
+//--- Por ejemplo, usamos getBalance y usamos nuestra billetera en params (Nota: para usar curl en terminal, abrir una consola en bash)
+//--- Nota: cambiar localhost y cuenta en params
+//--- Nota2: asegurarse que el metamask está conectado al faucet (y no Sepolia o Goerli) para que muestre el saldo que retorna nuestra app (que está apuntando a localhost donde está el faucet)
+curl --location 'localhost:8545/' \
+--header 'Content-Type: application/json' \
+--data '{
+	"jsonrpc":"2.0",
+	"method":"eth_getBalance",
+	"params":[
+		"0x7c4022ac32ba578c8f2effa2f3b4980e6a0b0782",
+		"latest"
+	],
+	"id":1
+}'
+
+//-- Otra forma de hacerlo es sin password:
+docker run -d --name ethnodo -p 8999:8546 -v ${PWD}/data:/data ethereum/client-go:latest --datadir /data --http --http.api personal,web3,net,eth --http.addr 0.0.0.0 --http.port 8546 -D0BE46Fd3a4BC03b49532e98C;a6b5ea80-118a-4f8d-945d-f25fb0f4b2ca0BE46Fd3a4BC03b49532e98C
+
+//-- Nota1: el --http.port 8546 corresponde al puerto del contenedor, o sea, -p 8999:8546
+//-- Nota2: al hacerlo sin password, no es necesario el campo extrada en el genesis.json:
+//-- El campo extradata es específico del consenso Clique, que es un protocolo de consenso basado en prueba de autoridad (PoA). En Clique, los bloques no se minan en el sentido tradicional (no hay "proof-of-work"), sino que los validadores (conocidos como signatarios o validadores autorizados) validan los bloques. En este caso:
+//-- extradata debe contener las direcciones de los signatarios (autorizados a firmar bloques)
+// Si el archivo genesis.json usa el algoritmo de consenso Ethash (Proof of Work, PoW), que no requiere necesariamente cuentas de validadores como en Clique (Proof of Authority, PoA)
+(Para más info, mirar ChatGPT: Error en nodo ethereum 01/10/24)

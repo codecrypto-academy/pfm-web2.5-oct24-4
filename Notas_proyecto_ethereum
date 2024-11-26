@@ -1,0 +1,68 @@
+1. Instalar geth y añadir el path (Hay que usar la v.1.13.15, sino obtenemos un error)
+
+2. Para cada nodo, ejecuta:
+   geth --datadir nodo1 account new --password .\pwd.txt -> Crean el directorio del nodo y el fichero con la conf de la cuenta
+
+3. Creamos un genesis.json (podemos usar de otro proyecto y ajustarlo) asegurándote de incluir el extradata correctamente con todas las cuentas de los nodos que van a participar para que puedan minar.
+
+4. Crea el bootnode.
+   Genera la clave del bootnode:
+
+bootnode -genkey boot.key
+
+5. Ejecuta el bootnode.
+   Con el nuevo puerto asignado:
+
+bootnode -verbosity 9 -nodekey boot.key -addr "0.0.0.0:30301"
+
+Se recibe un <ENODE> que luego se usa en el punto 7
+
+6. Inicializa cada nodo con el genesis.json.
+   Lanzamos el comando que une todos los nodos para funcionar juntos. Para cada nodo, ejecuta:
+
+geth --datadir nodo1 init genesis.json
+geth --datadir nodo2 init genesis.json
+geth --datadir nodo3 init genesis.json
+
+7. Ejecuta cada nodo Geth.
+   Para cada nodo, reemplaza <NETWORK_CHAINID>, <DIR_NODE>, <HTTP_PORT>, <CUENTA>, <PORT> y <ENODE> según sea necesario:
+   bash
+   Copiar código
+   geth --networkid <NETWORK_CHAINID> --syncmode full --datadir <DIR_NODE> --http --graphql --http.port <HTTP_PORT> --http.api admin,eth,miner,net,txpool,personal,web3 --allow-insecure-unlock unlock "0x<CUENTA>" --password node1/pwd.txt --port <PORT> --bootnodes "<ENODE>"
+
+8. Añadir nueva red en Metamask con datos: chainId en genesis.json, url es http://localhost:8545, uno de los nodos, moneda ETH.
+
+9. Si queremos que algun nodo mine bloques, tenemos al menos dos opciones (y que la cuenta del nodo esté en el extradata):
+   1- añadir en el comando del punto 7: --mine --miner.etherbase "0x<DIRECCION_RECOMPENSA>"
+   2- si el nodo ya está en ejecución, abre una terminal: geth attach http://localhost:8545 (por ejemplo, el nodo1), y dentro de la consola de geth javascript escribe: miner.start()
+
+Notas:
+<NETWORK_CHAINID>: El parámetro --networkid se utiliza para identificar de manera única una red Ethereum. Si estás conectando tu nodo a la red principal de Ethereum o a redes de prueba públicas no necesitas especificarlo, ya que estas redes tienen networkid predefinidos. Algunos manuales pueden omitirlo si están asumiendo que el usuario está trabajando en redes públicas donde no es necesario.
+<DIR_NODE> En nuestro caso, tenemos nodo1, nodo2 y nodo3.
+<HTTP_PORT> Usar para cada nodo uno distinto.
+<CUENTA> Son las cuentas de cada nodo, se ve en los ficheros UTC que se han guardado en la carpeta keystore de cada nodo.
+<PORT> No usar la 30301 pq se está usando con el enode, para cada nodo uno distinto.
+<ENODE> Se menciona en el punto 5.
+
+Para mayor comodidad, así se han ejecutado todos los nodos:
+
+geth --syncmode full --datadir nodo1 --http --graphql --http.port 8545 --http.api admin,eth,miner,net,txpool,personal,web3 --allow-insecure-unlock --unlock "0x3cc2639309238060f59de6e9b77e6d14fb6c5412" --mine --miner.etherbase "0x3cc2639309238060f59de6e9b77e6d14fb6c5412" --password pwd.txt --port 30304 --bootnodes "enode://79309e826d407bc0287d02bba01f76bd82cf7c45905d924fe72163d7bf818b871db9c82dd05dca294ebcc78f7604e5aebca69be7231babeee684f38ab96c32ed@127.0.0.1:0?discport=30301"
+
+geth --authrpc.port 8552 --ipcpath "\\.\pipe\geth2.ipc" --datadir nodo2 --syncmode full --http --graphql --http.port 8546 --http.api admin,eth,miner,net,txpool,personal,web3 --allow-insecure-unlock --unlock "0x34d3720d36d8facad57305622d82624677cd1d67" --password pwd.txt --port 30305 --bootnodes "enode://79309e826d407bc0287d02bba01f76bd82cf7c45905d924fe72163d7bf818b871db9c82dd05dca294ebcc78f7604e5aebca69be7231babeee684f38ab96c32ed@127.0.0.1:0?discport=30301"
+
+geth --authrpc.port 8553 --ipcpath "\\.\pipe\geth3.ipc" --syncmode full --datadir nodo3 --http --graphql --http.port 8547 --http.api admin,eth,miner,net,txpool,personal,web3 --allow-insecure-unlock --unlock "0xe3dec04bafeed830b9c59f01bb449b599b4858a2" --password pwd.txt --port 30306 --bootnodes "enode://79309e826d407bc0287d02bba01f76bd82cf7c45905d924fe72163d7bf818b871db9c82dd05dca294ebcc78f7604e5aebca69be7231babeee684f38ab96c32ed@127.0.0.1:0?discport=30301"
+
+OJO! El nodo 2 y 3 se necesita añadir un ipcpath distinto, sino nos dará un error así:
+
+WARN [10-26|12:46:46.027] IPC opening failed url=\\.\pipe\geth.ipc error="open \\.\pipe\geth.ipc: Acceso denegado."
+Fatal: Error starting protocol stack: open \\.\pipe\geth.ipc: Acceso denegado.
+
+Por lo que añadimos al nodo 2 --ipcpath "\\.\pipe\geth2.ipc" y al 3 --ipcpath "\\.\pipe\geth3.ipc"
+
+OJO2! También se necesita cambiar el puerto authrpc para cada nodo, sino nos dará este error:
+
+Fatal: Error starting protocol stack: listen tcp 127.0.0.1:8551: bind: Solo se permite un uso de cada dirección de socket (protocolo/dirección de red/puerto)
+
+Por lo que añadimos al nodo 2 --authrpc.port 8552 y al 3 --authrpc.port 8553
+
+Ahora mismo solo minaria el nodo1 que es el único que tiene los parámetros --mine --miner.etherbase "0x3cc2639309238060f59de6e9b77e6d14fb6c5412". Para realizar transacciones, hay que conectarse a ese nodo1 (http://localhost:8545). Si queremos que el resto de nodos mine y haga transacciones, colocar los parámetros a los otros nodos y conectarse(http://localhost:8546 o http://localhost:8547).
