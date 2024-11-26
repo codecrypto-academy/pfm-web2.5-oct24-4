@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { data, useParams } from "react-router-dom";
 import InputField from "./InputField";
 import { toast } from "react-toastify";
 import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, SubmitHandler } from "react-hook-form";
 
 interface Network {
   id: string;
@@ -21,20 +21,21 @@ interface Network {
 }
 
 interface CreateNetworkFormProps {
-  onNetworkCreated: () => void;
+  onNetworkCreated: (network: Network) => void;
 }
 
 const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated }) => {
-  
+  const { register, control, handleSubmit } = useForm();
   const [chainId, setChainId] = useState("");
   const [subnet, setSubnet] = useState("");
   const [ipBootnode, setIpBootnode] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const params = useParams();
+  const params = useParams<{id:string}>();
   const [network, setNetwork] = useState<Network | null>(null);
-  let id = params.id;
+  const [id, setid] = useState<string | undefined>(params.id);
+  
   useEffect(() => {
     if (id) {
       fetch(`http://localhost:5555/${id}`).then((response) => {
@@ -91,7 +92,7 @@ const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated 
       setChainId("");
       setSubnet("");
       setIpBootnode("");
-      onNetworkCreated();
+      onNetworkCreated(data);
       setShowForm(false); // Ocultar el formulario tras la creación
     } catch (err) {
       toast.error("Error creating the network. Try again later...");
@@ -99,6 +100,7 @@ const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated 
     }
   };
   
+  /*
   const {
     register,
     control,
@@ -107,6 +109,7 @@ const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated 
   } = useForm({
     values: network,
   });
+  */
 
   const {
     fields: allocFields,
@@ -206,7 +209,84 @@ const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated 
                 placeholder="Enter the IP Boot Node"
               />
             </div>
-            <h2 className="text-xl font-bold mb-4">Create New Network</h2>
+            <h2 className="text-xl font-bold mb-4">Alloc</h2>
+            <input
+              className="btn btn-primary"
+              type="button"
+              onClick={() => allocAppend("")}
+              value="Add"
+            />
+            <div>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>Cuenta</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allocFields.map((field, index) => (
+                    <tr key={field.id}>
+                      <td>
+                        <input
+                          type="button"
+                          onClick={() => allocRemove(index)}
+                          value="X"
+                        />
+                      </td>
+                      <td>
+                        <input {...register(`alloc.${index}`)} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <h2 className="text-xl font-bold mb-4">Nodos</h2>
+            <input
+              className="btn btn-primary"
+              type="button"
+              onClick={() => nodosAppend("")}
+              value="Add"
+            />
+            <div>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>IP</th>
+                    <th>Port</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {nodosFields.map((field, index) => (
+                    <tr key={field.id}>
+                      <td>
+                        <input
+                          type="button"
+                          onClick={() => nodosRemove(index)}
+                          value="X"
+                        />
+                      </td>
+                      <td>
+                        <input {...register(`nodos.${index}.type`)} />
+                      </td>
+                      <td>
+                        <input {...register(`nodos.${index}.name`)} />
+                      </td>
+                      <td>
+                        <input {...register(`nodos.${index}.ip`)} />
+                      </td>
+                      <td>
+                        <input {...register(`nodos.${index}.port`)} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             <div className="flex gap-4">
               <button
               type="submit"
