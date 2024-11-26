@@ -1,36 +1,83 @@
-import React, { useState } from "react";
-import axios from "axios";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import InputField from "./InputField";
 import { toast } from "react-toastify";
+import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
+import { useForm, useFieldArray } from "react-hook-form";
+
+interface Network {
+  id: string;
+  chainId: number;
+  subnet: string;
+  ipBootnode: string;
+  alloc: string[];
+  nodos: {
+    type: string;
+    name: string;
+    ip: string;
+    port: number;
+  }[];
+}
 
 interface CreateNetworkFormProps {
   onNetworkCreated: () => void;
 }
 
 const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated }) => {
-  const [networkName, setNetworkName] = useState("");
+  
   const [chainId, setChainId] = useState("");
   const [subnet, setSubnet] = useState("");
-  const [ipBootNode, setIpBootNode] = useState("");
+  const [ipBootnode, setIpBootnode] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const params = useParams();
+  const [network, setNetwork] = useState<Network | null>(null);
+  let id = params.id;
+  useEffect(() => {
+    if (id) {
+      fetch(`http://localhost:5555/${id}`).then((response) => {
+        response.json().then((data) => {
+          console.log(data);
+          setNetwork(data);
+        });
+      }); 
+    } else {
+      setNetwork({
+        id: "",
+        chainId: 0,
+        subnet: "",
+        ipBootnode: "",
+        alloc: [
+          "C077193960479a5e769f27B1ce41469C89Bec299",
+        ],
+        nodos: [
+          {
+            type: "",
+            name: "",
+            ip: "",
+            port: 0,
+          },
+        ],
+      })
+    }
+  }, [id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!networkName || !chainId || !subnet || !ipBootNode) {
+    if (!id || !chainId || !subnet || !ipBootnode) {
       setError("All fields are mandatory.");
       return;
     }
 
     try {
       const response = await axios.post("http://localhost:5555/create-network", {
-        networkName,
+        id,
         chainId,
         subnet,
-        ipBootNode,
+        ipBootnode,
       });
 
       console.log(response.data); // Verifica la respuesta
@@ -40,16 +87,59 @@ const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated 
       }
 
       setError("");
-      setNetworkName("");
+      setid("");
       setChainId("");
       setSubnet("");
-      setIpBootNode("");
+      setIpBootnode("");
       onNetworkCreated();
       setShowForm(false); // Ocultar el formulario tras la creación
     } catch (err) {
       toast.error("Error creating the network. Try again later...");
       setMessage("");
     }
+  };
+  
+  const {
+    register,
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    values: network,
+  });
+
+  const {
+    fields: allocFields,
+    append: allocAppend,
+    remove: allocRemove,
+  } = useFieldArray({
+    control,
+    name: "alloc",
+  });
+
+  const {
+    fields: nodosFields,
+    append: nodosAppend,
+    remove: nodosRemove,
+  } = useFieldArray({
+    control,
+    name: "nodos",
+  });
+
+  const onSubmit = (data: any) => {
+    console.log(data);
+    fetch("http://localhost:5555", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }).then((response) => {
+      response.json().then((data) => {
+        console.log(data);
+      });
+    });
+
   };
 
   return (
@@ -79,10 +169,10 @@ const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated 
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <InputField
-                id="networkName"
+                id="id"
                 label="Network name"
-                value={networkName}
-                onChange={(e) => setNetworkName(e.target.value)}
+                value={id}
+                onChange={(e) => setid(e.target.value)}
                 placeholder="Enter the Network name"
               />
             </div>
@@ -109,14 +199,14 @@ const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated 
 
             <div className="mb-4">
               <InputField
-                id="ipBootNode"
+                id="ipBootnode"
                 label="IP Boot Node"
-                value={ipBootNode}
-                onChange={(e) => setIpBootNode(e.target.value)}
+                value={ipBootnode}
+                onChange={(e) => setIpBootnode(e.target.value)}
                 placeholder="Enter the IP Boot Node"
               />
             </div>
-
+            <h2 className="text-xl font-bold mb-4">Create New Network</h2>
             <div className="flex gap-4">
               <button
               type="submit"
