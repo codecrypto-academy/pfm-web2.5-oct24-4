@@ -4,7 +4,7 @@ import InputField from "./InputField";
 import { toast } from "react-toastify";
 import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
-import { useForm, useFieldArray, SubmitHandler } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 
 interface Network {
   id: string;
@@ -25,10 +25,11 @@ interface CreateNetworkFormProps {
 }
 
 const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated }) => {
-  const { register, control, handleSubmit } = useForm();
+  // const { register, control } = useForm();
   const [chainId, setChainId] = useState("");
   const [subnet, setSubnet] = useState("");
   const [ipBootnode, setIpBootnode] = useState("");
+  const [alloc, setAlloc] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -92,7 +93,8 @@ const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated 
       setChainId("");
       setSubnet("");
       setIpBootnode("");
-      onNetworkCreated(data);
+      setAlloc("");
+      onNetworkCreated(response.data);
       setShowForm(false); // Ocultar el formulario tras la creación
     } catch (err) {
       toast.error("Error creating the network. Try again later...");
@@ -111,39 +113,39 @@ const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated 
   });
   */
 
-  const {
-    fields: allocFields,
-    append: allocAppend,
-    remove: allocRemove,
-  } = useFieldArray({
-    control,
-    name: "alloc",
-  });
+  // const {
+  //   fields: allocFields,
+  //   append: allocAppend,
+  //   remove: allocRemove,
+  // } = useFieldArray({
+  //   control,
+  //   name: "alloc",
+  // });
 
-  const {
-    fields: nodosFields,
-    append: nodosAppend,
-    remove: nodosRemove,
-  } = useFieldArray({
-    control,
-    name: "nodos",
-  });
+  // const {
+  //   fields: nodosFields,
+  //   append: nodosAppend,
+  //   remove: nodosRemove,
+  // } = useFieldArray({
+  //   control,
+  //   name: "nodos",
+  // });
 
-  const onSubmit = (data: any) => {
-    console.log(data);
-    fetch("http://localhost:5555", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    }).then((response) => {
-      response.json().then((data) => {
-        console.log(data);
-      });
-    });
+  // const onSubmit = (data: any) => {
+  //   console.log(data);
+  //   fetch("http://localhost:5555", {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify(data),
+  //   }).then((response) => {
+  //     response.json().then((data) => {
+  //       console.log(data);
+  //     });
+  //   });
 
-  };
+  // };
 
   return (
     <div className="max-w-md mx-auto p-4 border rounded-lg shadow-md">
@@ -174,7 +176,7 @@ const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated 
               <InputField
                 id="id"
                 label="Network name"
-                value={id}
+                value={id ?? ""}
                 onChange={(e) => setid(e.target.value)}
                 placeholder="Enter the Network name"
               />
@@ -209,7 +211,18 @@ const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated 
                 placeholder="Enter the IP Boot Node"
               />
             </div>
-            <h2 className="text-xl font-bold mb-4">Alloc</h2>
+
+            <div className="mb-4">
+              <InputField
+                id="alloc"
+                label="Alloc"
+                value={alloc}
+                onChange={(e) => setAlloc(e.target.value)}
+                placeholder="Enter the Alloc"
+              />
+            </div>
+
+            {/* <h2 className="text-xl font-bold mb-4">Alloc</h2>
             <input
               className="btn btn-primary"
               type="button"
@@ -286,7 +299,7 @@ const CreateNetworkForm: React.FC<CreateNetworkFormProps> = ({ onNetworkCreated 
                   ))}
                 </tbody>
               </table>
-            </div>
+            </div> */}
             <div className="flex gap-4">
               <button
               type="submit"
