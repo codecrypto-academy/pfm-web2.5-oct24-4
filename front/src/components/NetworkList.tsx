@@ -64,12 +64,12 @@ const NetworkList: React.FC<{ networks: Network[]; refreshNetworks?: () => void;
                   Show nodes
                 </button>
 
-                <button
+                {/* <button
                   onClick={() => handleShowNodes(network)}
                   className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-1 mt-4 rounded"
                 >
                   Operations
-                </button>
+                </button> */}
                 
                 <button
                   onClick={() => handleDeleteNetwork(network.networkName)}
