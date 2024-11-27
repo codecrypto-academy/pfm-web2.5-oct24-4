@@ -1,16 +1,18 @@
-import fs from "fs";
+import { statSync, mkdirSync, PathLike } from "fs";
 
-export function existsDir(dir: fs.PathLike): boolean {
+const existsDir = (dir: PathLike) => {
   try {
-    fs.statSync(dir);
+    statSync(dir);
     return true;
   } catch (err) {
     return false;
   }
-}
+};
 
-export function createDir(dir: fs.PathLike): void {
+const createDir = (dir: PathLike) => {
   if (!existsDir(dir)) {
-    fs.mkdirSync(dir);
+    mkdirSync(dir);
   }
-}
+};
+
+export default { existsDir, createDir };

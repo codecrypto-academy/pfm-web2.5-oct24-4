@@ -1,80 +1,61 @@
-import ethers from "ethers";
-import { JsonRpcProvider } from "ethers";
-import { Network, Node } from "../types/network";
+import { createContainer } from "./dockerService";
+import { v4 as uuidv4 } from "uuid";
 
-const networks: { [key: string]: Network } = {};
-
-export const addNodeToNetwork = async (
-  networkName: string,
-  nodeId: string,
-  rpcUrl: string,
-  type: "miner" | "rpc" | "normal",
-  name: string,
-  ip: string,
-  port: string
+export const createNode = async (
+  networkId: any,
+  { type, name, ip, port, accountAddress }: any
 ) => {
-  const provider = new JsonRpcProvider(rpcUrl);
-  const network = await provider.getNetwork();
+  const nodeId = uuidv4();
+  const genesisPath = `/${networkId}.json`;
 
-  if (network.chainId.toString() !== networkName) {
-    throw new Error("El networkName no coincide con el RPC proporcionado");
-  }
+  // Crear el contenedor de nodo utilizando Docker
+  const container = await createContainer({
+    Image: "ethereum/client-go:v1.11.5",
+    name: `geth-node-${name}`,
+    Entrypoint: ["/bin/sh", "-c", "geth"],
+    Cmd: [
+      "--networkid",
+      networkId,
+      "--syncmode",
+      "full",
+      "--datadir",
+      `/root/.ethereum`,
+      "--http",
+      "--http.port",
+      port,
+      "--http.api",
+      "admin,eth,miner,net,txpool,personal,web3",
+      "--allow-insecure-unlock",
+      "--unlock",
+      accountAddress,
+      "--password",
+      "/root/.ethereum/password.txt",
+      "--port",
+      port,
+      "--bootnodes",
+      "enode://<ENODE>",
+      "--mine",
+      "--miner.etherbase",
+      accountAddress,
+    ],
+    HostConfig: {
+      Binds: [
+        `/path/to/${name}:/root/.ethereum`,
+        `${genesisPath}:/genesis.json`,
+      ],
+      PortBindings: {
+        [`${port}/tcp`]: [{ HostPort: port }],
+      },
+    },
+  });
 
-  if (!networks[networkName]) {
-    networks[networkName] = {
-      id: networkName,
-      networkName,
-      chainId: "",
-      subnet: "",
-      ipBootNode: "",
-      nodes: [],
-    };
-  }
-
-  if (!networks[networkName].nodes) {
-    networks[networkName].nodes = [];
-  }
-
-  networks[networkName].nodes.push({ nodeId, type, name, ip, port, provider });
-  return networks[networkName];
-};
-
-export const getNodeDetails = (networkId: string) => {
-  if (!networks[networkId]) {
-    throw new Error("Red no encontrada");
-  }
-
-  const network = networks[networkId];
-  if (!network.nodes) {
-    throw new Error("No hay nodos configurados para esta red");
-  }
-
-  return network.nodes.map((node: Node) => ({
-    nodeId: node.nodeId,
-    type: node.type,
-    name: node.name,
-    ip: node.ip,
-    port: node.port,
-    rpcUrl: node.provider,
-  }));
-};
-
-export const removeNodeFromNetwork = (networkId: string, nodeId: string) => {
-  if (!networks[networkId]) {
-    throw new Error("Red no encontrada");
-  }
-
-  const network = networks[networkId];
-  if (!network.nodes) {
-    throw new Error("No hay nodos configurados para esta red");
-  }
-
-  const nodeIndex = network.nodes.findIndex((node) => node.nodeId === nodeId);
-
-  if (nodeIndex === -1) {
-    throw new Error("Nodo no encontrado en la red especificada");
-  }
-
-  network.nodes.splice(nodeIndex, 1);
-  return network;
+  return {
+    id: nodeId,
+    type,
+    name,
+    ip,
+    port,
+    accountAddress,
+    containerId: container.id,
+  };
 };

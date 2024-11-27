@@ -1,76 +1,26 @@
 import { Request, Response } from "express";
-import {
-  addNodeToNetwork,
-  getNodeDetails as getNodeDetailsFromService,
-  removeNodeFromNetwork,
-} from "../services/nodeService";
-import { Node } from "../types/network";
+import { createNode as _createNode } from "../services/nodeService";
+import { saveNode, readNodes } from "../services/fileService";
 
-export const addNode = async (req: Request, res: Response) => {
-  const { networkName, nodeId, rpcUrl, type, name, ip, port } = req.body;
-
+export const createNode = async (req: Request, res: Response) => {
   try {
-    const network = await addNodeToNetwork(
-      networkName,
-      nodeId,
-      rpcUrl,
-      type,
-      name,
-      ip,
-      port
-    );
-    res.json({
-      message: `Nodo ${nodeId} agregado a la red ${networkName}`,
-      network,
-    });
+    const { networkId, ...nodeData } = req.body;
+    const node = await _createNode(networkId, nodeData);
+    saveNode(networkId, node);
+    res.status(201).json(node);
   } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({
-        error:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred",
-      });
+    console.error("Error al crear el nodo:", error);
+    res.status(500).json({ error: "Error al crear el nodo" });
   }
 };
 
-export const getNodeDetails = (req: Request, res: Response) => {
-  const { networkId } = req.params;
+export const getNodes = (req: Request, res: Response) => {
   try {
-    const nodes = getNodeDetailsFromService(networkId);
-    res.json({ networkId, nodes });
+    const { networkId } = req.params;
+    const nodes = readNodes(networkId);
+    res.json(nodes);
   } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({
-        error:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred",
-      });
-  }
-};
-
-export const removeNode = (req: Request, res: Response) => {
-  const { networkId, nodeId } = req.body;
-  try {
-    const network = removeNodeFromNetwork(networkId, nodeId);
-    res.json({
-      message: `Nodo ${nodeId} eliminado de la red ${networkId}`,
-      network,
-    });
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({
-        error:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred",
-      });
+    console.error("Error al obtener los nodos:", error);
+    res.status(500).json({ error: "Error al obtener los nodos" });
   }
 };

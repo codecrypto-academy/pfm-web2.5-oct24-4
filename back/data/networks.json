@@ -1,0 +1,11 @@
+[
+  {
+    "id": "c00a3b2e-ef09-4594-abb3-b231ce79529d",
+    "networkName": "testnet",
+    "chainId": "1234",
+    "subnet": "192.168.0.0/16",
+    "ipBootNode": "0.0.0.0",
+    "containerId": "32c06cbe5f474fabfc60562340f21860dd05e3c8b958c0b4c6602dfb60179ce4",
+    "nodes": []
+  }
+]

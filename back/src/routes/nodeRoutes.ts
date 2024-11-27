@@ -1,12 +1,9 @@
 import { Router } from "express";
-import {
-  addNode,
-  getNodeDetails,
-  removeNode,
-} from "../controllers/nodeController";
+import { createNode, getNodes } from "../controllers/nodeController";
 
-export const nodeRoutes = Router();
+const router = Router();
 
-nodeRoutes.post("/add", addNode);
-nodeRoutes.get("/:networkId", getNodeDetails);
-nodeRoutes.delete("/remove", removeNode);
+router.post("/create", createNode);
+router.get("/:networkId", getNodes);
+
+export default router;

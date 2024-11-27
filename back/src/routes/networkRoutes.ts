@@ -1,18 +1,9 @@
 import { Router } from "express";
-import {
-  createNetwork,
-  getNetworks,
-  getNetworkDetails,
-  deleteNetwork,
-  startNetwork,
-  stopNetwork,
-} from "../controllers/networkController";
+import { createNetwork, getNetworks } from "../controllers/networkController";
 
-export const networkRoutes = Router();
+const router = Router();
 
-networkRoutes.post("/create-network", createNetwork);
-networkRoutes.get("/", getNetworks);
-networkRoutes.get("/:networkName", getNetworkDetails);
-networkRoutes.delete("/:networkName", deleteNetwork);
-networkRoutes.post("/up/:id", startNetwork);
-networkRoutes.post("/down/:id", stopNetwork);
+router.post("/create", createNetwork);
+router.get("/", getNetworks);
+
+export default router;

@@ -1,3 +1,5 @@
 import { JsonRpcProvider } from "ethers";
 
-export const provider = new JsonRpcProvider(process.env.URL_NODO);
+const provider = new JsonRpcProvider(process.env.URL_NODO);
+
+export default provider;

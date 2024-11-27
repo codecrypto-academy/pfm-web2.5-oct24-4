@@ -1,4 +1,6 @@
-export const logger = {
-  log: (message: string) => console.log(message),
-  error: (message: string) => console.error(message),
+const logger = {
+  log: (message: any) => console.log(message),
+  error: (message: any) => console.error(message),
 };
+
+export default logger;

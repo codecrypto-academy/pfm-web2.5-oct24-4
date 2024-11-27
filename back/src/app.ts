@@ -1,22 +1,18 @@
-import express from "express";
+import express, { json } from "express";
 import cors from "cors";
-import bodyParser from "body-parser";
-import { config as dotenvConfig } from "dotenv";
+import { json as _json } from "body-parser";
+require("dotenv").config();
 
-import { networkRoutes } from "./routes/networkRoutes";
-import { faucetRoutes } from "./routes/faucetRoutes";
-import { nodeRoutes } from "./routes/nodeRoutes";
-
-dotenvConfig();
+import networkRoutes from "./routes/networkRoutes";
+import nodeRoutes from "./routes/nodeRoutes";
 
 const app = express();
 
-app.use(express.json());
+app.use(json());
 app.use(cors());
-app.use(bodyParser.json());
+app.use(_json());
 
 app.use("/networks", networkRoutes);
-app.use("/faucet", faucetRoutes);
 app.use("/nodes", nodeRoutes);
 
 export { app };

@@ -1,0 +1,33 @@
+version: '3'
+services:
+  app:
+    build: .
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - "5555:5555"
+    environment:
+      - NODE_ENV=development
+
+  bootnode:
+    image: ethereum/client-go:alltools-v1.11.5
+    command: 'bootnode --nodekey=/boot.key --addr=0.0.0.0:30301'
+    volumes:
+      - ./boot.key:/boot.key
+    networks:
+      ethnetwork:
+        ipv4_address: 172.18.0.2
+
+  node1:
+    image: ethereum/client-go:v1.11.5
+    command: 'geth --networkid <NETWORK_CHAINID> --datadir=/root/.ethereum --http --http.port 8545 --http.api "admin,eth,miner,net,txpool,personal,web3" --allow-insecure-unlock --unlock "0x<CUENTA>" --password /root/.ethereum/password.txt --port 30303 --bootnodes "enode://<ENODE>@172.18.0.2:30301" --mine --miner.etherbase "0x<DIRECCION_RECOMPENSA>"'
+    volumes:
+      - ./nodo1:/root/.ethereum
+    networks:
+      ethnetwork:
+        ipv4_address: 172.18.0.3
+
+networks:
+  ethnetwork:
+    driver: bridge
