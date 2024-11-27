@@ -122,13 +122,30 @@ export const createNetwork = async ({
   const genesisPath = createGenesis(networkName, chainId, allocAddresses);
   console.log("Archivo de génesis creado en: ", genesisPath);
 
-  // Crear el contenedor de red utilizando Docker
-  console.log("Creando el contenedor de Docker");
+  // Inicializar la red con geth init
+  console.log("Inicializando la red de Geth con el archivo de génesis");
+  const initContainer = await createContainer({
+    Image: "ethereum/client-go:v1.11.5",
+    name: `geth-init-${networkName}`,
+    Entrypoint: ["/bin/sh", "-c", `geth init /genesis.json`],
+    HostConfig: {
+      Binds: [`${genesisPath}:/genesis.json`, `${process.cwd()}/data:/data`],
+    },
+  });
+
+  await initContainer.start();
+  await initContainer.wait();
+  await initContainer.remove();
+
+  // Crear el contenedor de red utilizando Docker para iniciar Geth
+  console.log("Creando el contenedor de Docker para iniciar Geth");
   const container = await createContainer({
     Image: "ethereum/client-go:v1.11.5",
     name: `geth-${networkName}`,
-    Entrypoint: ["/bin/sh", "-c", "geth"],
-    Cmd: [
+    Entrypoint: [
+      "geth",
+      "--verbosity",
+      "3",
       "--http",
       "--http.api",
       "eth,web3,personal,net",
@@ -139,16 +156,36 @@ export const createNetwork = async ({
       "--mine",
       "--port",
       "30304",
-      "--bootnodes",
-      ipBootNode,
+      "--miner.etherbase",
+      allocAddresses[0], // Especificar etherbase
     ],
     HostConfig: {
-      Binds: [`${genesisPath}:/genesis.json`],
+      Binds: [
+        `${process.cwd()}/data:/data`,
+        `${process.cwd()}/password.txt:/root/password.txt`,
+      ],
       PortBindings: {
         "30304/tcp": [{ HostPort: "30304" }],
       },
     },
   });
+
+  await container.start();
+
+  // Desbloquear la cuenta y empezar la minería
+  console.log("Desbloqueando la cuenta y comenzando la minería");
+  const execResult = await container.exec({
+    Cmd: [
+      "/bin/sh",
+      "-c",
+      `geth attach ipc:/data/${networkName}/geth.ipc --exec 'personal.unlockAccount("${allocAddresses[0]}", "your_password_here"); miner.start();'`,
+    ],
+  });
+
+  console.log(
+    "Resultado de la ejecución del comando de desbloqueo y minería:",
+    execResult
+  );
 
   console.log("Contenedor creado: ", container.id);
 
