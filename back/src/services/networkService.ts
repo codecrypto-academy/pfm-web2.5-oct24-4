@@ -96,8 +96,9 @@ const createGenesis = (
     fs.mkdirSync(dataDir);
   }
 
-  const genesisPath = path.join(__dirname, `../data/${networkName}.json`);
+  const genesisPath = path.join(dataDir, `${networkName}_genesis.json`); // Comentario: Cambiar nombre del archivo
   fs.writeFileSync(genesisPath, JSON.stringify(genesis, null, 2));
+  console.log("Archivo de génesis creado en: ", genesisPath);
   return genesisPath;
 };
 
